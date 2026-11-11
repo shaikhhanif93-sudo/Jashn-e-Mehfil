@@ -1,13 +1,21 @@
 {
+  "id": "/Jashn-e-Mehfil/",
   "name": "Jashn-e-Mehfil",
   "short_name": "Jashn",
+  "description": "Villa trip group app: live location, chat, photos, videos, SOS and more.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b0f1a",
   "theme_color": "#0b0f1a",
+  "lang": "hi",
+  "dir": "ltr",
+  "categories": ["social", "travel"],
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
