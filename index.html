@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Jashn-e-Mehfil">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Jashn-e-Mehfil</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0f1a;--panel:#131a2a;--line:#222c42;--gold:#d4a94f;--gold2:#f3d89a;--text:#eef0f5;--muted:#8d97ad;--me:#1d2b47;--danger:#e5484d}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:600}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px 16px;background:var(--gold);color:#1a1200;font-weight:500}
+button.ghost{background:transparent;color:var(--gold);border:1px solid var(--line)}
+button.danger{background:var(--danger);color:#fff}
+input,textarea{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text)}
+.screen{display:none;height:100%;flex-direction:column}
+.screen.active{display:flex}
+.pane{display:none;flex:1;overflow-y:auto;padding:14px 14px 8px}
+.pane.active{display:block}
+header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-top:calc(14px + env(safe-area-inset-top))}
+.brand{font-family:'Fraunces',serif;font-size:20px;color:var(--gold2)}
+nav{display:flex;border-top:1px solid var(--line);background:var(--bg);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;color:var(--muted);border-radius:0;padding:10px 2px;font-size:12px}
+nav button.on{color:var(--gold)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h3{margin-bottom:8px;color:var(--gold2)}
+.muted{color:var(--muted);font-size:13px}
+.center{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:24px;gap:14px;max-width:420px;margin:0 auto;width:100%}
+.logo{font-family:'Fraunces',serif;font-size:34px;text-align:center;color:var(--gold2);line-height:1.2}
+.logo small{display:block;font-size:14px;color:var(--muted);margin-top:6px;font-family:'DM Sans'}
+.row{display:flex;gap:8px;align-items:center}
+.spread{justify-content:space-between}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--me);display:flex;align-items:center;justify-content:center;color:var(--gold2);font-weight:600;flex-shrink:0;border:1px solid #2c3d61}
+.msg{display:flex;gap:8px;margin-bottom:12px;align-items:flex-end}
+.msg.mine{flex-direction:row-reverse}
+.bubble{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 12px;max-width:78%;word-wrap:break-word}
+.mine .bubble{background:var(--me);border-color:#2c3d61}
+.bubble img{max-width:220px;width:100%;border-radius:10px;display:block;margin-top:6px}
+.who{font-size:12px;color:var(--gold);margin-bottom:2px}
+.tag{color:var(--gold2);font-weight:500}
+.sticker{font-size:46px;line-height:1}
+.sys{text-align:center;color:var(--muted);font-size:13px;margin:10px 0}
+.pinned{background:linear-gradient(90deg,#2a2212,#131a2a);border:1px solid #5a4620;border-radius:14px;padding:10px 14px;margin-bottom:12px;font-size:14px}
+#map{height:62vh;border-radius:16px;border:1px solid var(--line)}
+.compose{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line);background:var(--bg);align-items:center}
+.compose input{flex:1;border-radius:99px;padding:10px 14px}
+.compose button{padding:10px 12px;border-radius:99px}
+.picker{display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px;border-top:1px solid var(--line);background:var(--bg)}
+.picker span{font-size:26px;cursor:pointer;padding:2px}
+.picker .st{font-size:36px}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1a1200;padding:10px 16px;border-radius:12px;display:none;z-index:50;max-width:90%;text-align:center}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.on{background:#3fb27f}
+.member{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line)}
+.member a{color:var(--gold);text-decoration:none;border:1px solid var(--line);padding:8px 12px;border-radius:99px;font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px}
+.sos{background:var(--danger);color:#fff;font-size:18px;padding:18px;width:100%;font-weight:600}
+.opt{display:block;width:100%;text-align:left;background:#0f1524;color:var(--text);border:1px solid var(--line);margin-top:6px;font-weight:400}
+.opt.picked{border-color:var(--gold)}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.recap{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.recap b{display:block;font-family:'Fraunces',serif;font-size:24px;color:var(--gold2)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section class="screen" id="s-login">
+  <div class="center">
+    <div class="logo">Jashn-e-Mehfil<small>Villa trip · 14–15</small></div>
+    <input id="inName" placeholder="Aapka naam" maxlength="30">
+    <input id="inPhone" type="tel" placeholder="Mobile number (10 digit)" maxlength="14">
+    <p class="muted">Login par location permission maangi jayegi. Admin approval ke bina group me koi nahi jud sakta.</p>
+    <button id="btnLogin">Login karo</button>
+  </div>
+</section>
+
+<!-- WAITING -->
+<section class="screen" id="s-wait">
+  <div class="center" style="text-align:center">
+    <div class="logo">Approval ka intezaar<small id="waitName"></small></div>
+    <p class="muted">Admin ko request bhej di gayi hai. Approve hote hi app khul jayega.</p>
+    <button class="ghost" id="btnLogout">Doosra number use karo</button>
+  </div>
+</section>
+
+<!-- APP -->
+<section class="screen" id="s-app">
+  <header>
+    <div class="brand">Jashn-e-Mehfil</div>
+    <button class="ghost" id="btnSos" style="padding:8px 12px;color:#ff6b6b;border-color:#5a2a2a">SOS</button>
+  </header>
+
+  <!-- CHAT -->
+  <div class="pane active" id="p-chat" style="padding:0;display:none;flex-direction:column;overflow:hidden">
+    <div id="pinBox" style="padding:10px 14px 0"></div>
+    <div id="msgs" style="flex:1;overflow-y:auto;padding:14px"></div>
+    <div id="pickerBox"></div>
+    <div class="compose">
+      <button class="ghost" id="btnEmoji">😊</button>
+      <input id="inMsg" placeholder="Message… @naam se tag karo">
+      <button id="btnSend">➤</button>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="pane" id="p-map">
+    <div id="map"></div>
+    <p class="muted" style="margin-top:10px">Har dost ka live location. Marker par tap karke naam dekho.</p>
+    <div class="card" style="margin-top:10px">
+      <div class="switch"><div><b>Location share karo</b><div class="muted">Band karne par dost tumhe map pe nahi dekhenge</div></div>
+      <input type="checkbox" id="chkShare" style="width:22px;height:22px;accent-color:#d4a94f"></div>
+    </div>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="pane" id="p-photos">
+    <div class="card">
+      <h3>Trip recap</h3>
+      <div class="recap">
+        <div><b id="rPhotos">0</b><span class="muted">Photos</span></div>
+        <div><b id="rMsgs">0</b><span class="muted">Messages</span></div>
+        <div><b id="rMembers">0</b><span class="muted">Members</span></div>
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <button style="flex:1" id="btnGallery">🖼 Gallery</button>
+      <button style="flex:1" class="ghost" id="btnCamera">📷 Camera</button>
+    </div>
+    <input type="file" id="fileGallery" accept="image/*" hidden>
+    <input type="file" id="fileCamera" accept="image/*" capture="environment" hidden>
+    <p class="muted" id="upStatus" style="margin-bottom:10px"></p>
+    <div class="grid" id="album"></div>
+  </div>
+
+  <!-- MEMBERS -->
+  <div class="pane" id="p-members">
+    <div class="card" id="membersList"></div>
+  </div>
+
+  <!-- MORE -->
+  <div class="pane" id="p-more">
+    <div class="card">
+      <h3>Villa</h3>
+      <div id="villaInfo"></div>
+      <div class="row" style="margin-top:10px">
+        <button style="flex:1" id="btnNavigate">📍 Navigate</button>
+        <button style="flex:1" class="ghost" id="btnArrive">🎉 Main pahunch gaya</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Pinned announcement</h3>
+      <div id="annText" class="muted">Abhi koi announcement nahi</div>
+      <div id="annForm" style="display:none;margin-top:10px" class="stack">
+        <textarea id="inAnn" rows="2" placeholder="Sab ko kya batana hai?"></textarea>
+        <button id="btnAnn">Pin karo</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Polls</h3>
+      <div id="pollsList" class="stack"></div>
+      <div class="stack" style="margin-top:12px">
+        <input id="inPollQ" placeholder="Poll ka sawal">
+        <input id="inPollOpts" placeholder="Options, comma se (jaise: Haan, Nahi, Shayad)">
+        <button class="ghost" id="btnPoll">Poll banao</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Video call</h3>
+      <p class="muted">Ek call me 6–8 log aaram se. Zyada log ho to 2 groups me baat karo.</p>
+      <button style="width:100%;margin-top:10px" id="btnVideo">📹 Video call shuru karo</button>
+    </div>
+
+    <div class="card">
+      <h3>Fun zone</h3>
+      <div class="stack">
+        <button class="ghost" id="btnDare">🎲 Truth ya Dare</button>
+        <button class="ghost" id="btnPickMember">🎯 Random member chuno</button>
+        <div id="funOut" style="font-size:16px;text-align:center;padding:6px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="switch">
+        <div><h3 style="margin:0">Privacy</h3><div class="muted">Location share band karne ka quick switch Map tab me bhi hai</div></div>
+      </div>
+    </div>
+
+    <div class="card" id="adminCard" style="display:none">
+      <h3>Admin: join requests</h3>
+      <div id="pendingList" class="stack"></div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="on" data-pane="chat">💬<br>Chat</button>
+    <button data-pane="map">📍<br>Map</button>
+    <button data-pane="photos">🖼<br>Photos</button>
+    <button data-pane="members">👥<br>Members</button>
+    <button data-pane="more">✨<br>More</button>
+  </nav>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, addDoc, query, orderBy, limitToLast, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ============ CONFIG (yahan apna admin number daalo) ============ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBRJEP2T_2nOrHKDoFnPinEHioRCGlnTPc",
+  authDomain: "jashn-e-mehfil.firebaseapp.com",
+  projectId: "jashn-e-mehfil",
+  storageBucket: "jashn-e-mehfil.firebasestorage.app",
+  messagingSenderId: "756127183098",
+  appId: "1:756127183098:web:c6803026d79f69499e9943"
+};
+const CONFIG = {
+  ADMIN_PHONE: "PUT_YOUR_10_DIGIT_NUMBER",   // <-- apna number yahan daalo
+  CLOUD_NAME: "u3srohwn",
+  UPLOAD_PRESET: "jashn_unsigned",
+  VILLA: { name: "Villa Name", address: "Villa ka address", checkin: "Check-in: 14 Nov, 2 PM", checkout: "Check-out: 15 Nov, 11 AM", wifi: "WiFi: naam / password", owner: "Owner: 9XXXXXXXXX", lat: 19.076, lng: 72.8777 },
+  DARES: ["Group ko ek shayari sunao", "Sabse bada jhooth bolo", "Kisi ek dost ka funny photo group me daalo", "10 push-ups karo", "Apna sabse embarrassing moment batao", "Kisi ek ko compliment do", "Ek accent me 1 minute baat karo"],
+  JITSI_ROOM: "JashnEMehfil-Villa-Trip-2026"
+};
+
+/* ============ INIT ============ */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let me = null;          // current user doc (id = phone)
+let users = [];
+let appStarted = false;
+let startedAt = Date.now();
+let map, markersLayer, lastLocWrite = 0, lastMsgCount = 0;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const tsMs = ts => (ts && ts.toMillis) ? ts.toMillis() : Date.now();
+const fmt = ms => new Date(ms).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+const initials = n => (n || "?").trim().charAt(0).toUpperCase();
+const toast = (t, ms = 2800) => { const el = $("#toast"); el.textContent = t; el.style.display = "block"; clearTimeout(el._t); el._t = setTimeout(() => el.style.display = "none", ms); };
+const showScreen = id => { document.querySelectorAll(".screen").forEach(s => s.classList.remove("active")); $("#" + id).classList.add("active"); };
+const isAdmin = () => me && me.isAdmin;
+const approvedUsers = () => users.filter(u => u.status === "approved");
+
+/* ============ SESSION ============ */
+function watchMe(phone) {
+  onSnapshot(doc(db, "users", phone), snap => {
+    if (!snap.exists()) { showScreen("s-login"); return; }
+    me = { id: snap.id, ...snap.data() };
+    if (me.isAdmin && me.status !== "approved") updateDoc(doc(db, "users", phone), { status: "approved" });
+    if (me.status !== "approved" && !me.isAdmin) { $("#waitName").textContent = me.name; showScreen("s-wait"); return; }
+    if (!appStarted) startApp();
+    $("#chkShare").checked = me.sharing !== false;
+  });
+}
+
+$("#btnLogin").onclick = async () => {
+  const name = $("#inName").value.trim();
+  const phone = $("#inPhone").value.replace(/\D/g, "").slice(-10);
+  if (!name) return toast("Naam likhna zaroori hai");
+  if (phone.length !== 10) return toast("10 digit ka mobile number daalo");
+  try {
+    $("#btnLogin").textContent = "Ruko…";
+    const cred = await signInAnonymously(auth);
+    const ref = doc(db, "users", phone);
+    const snap = await getDoc(ref);
+    const admin = phone === CONFIG.ADMIN_PHONE;
+    if (snap.exists()) {
+      await updateDoc(ref, { name, uid: cred.user.uid });
+    } else {
+      await setDoc(ref, { name, phone, uid: cred.user.uid, status: admin ? "approved" : "pending", isAdmin: admin, sharing: true, createdAt: serverTimestamp() });
+    }
+    localStorage.setItem("jm_phone", phone);
+    watchMe(phone);
+    askLocation();
+  } catch (e) { toast("Error: " + e.message); }
+  $("#btnLogin").textContent = "Login karo";
+};
+
+$("#btnLogout").onclick = () => { localStorage.removeItem("jm_phone"); location.reload(); };
+
+function askLocation() {
+  if (!navigator.geolocation) return toast("Is phone me location support nahi");
+  navigator.geolocation.watchPosition(p => {
+    if (!me || me.sharing === false) return;
+    if (Date.now() - lastLocWrite < 20000) return;
+    lastLocWrite = Date.now();
+    updateDoc(doc(db, "users", me.id), { lat: p.coords.latitude, lng: p.coords.longitude, locAt: serverTimestamp() }).catch(() => {});
+  }, () => toast("Location permission do, tabhi map pe dikhoge"), { enableHighAccuracy: true, maximumAge: 15000 });
+}
+
+/* ============ START APP (after approval) ============ */
+function startApp() {
+  appStarted = true;
+  showScreen("s-app");
+  $("#p-chat").style.display = "none";
+  showPane("chat");
+  $("#villaInfo").innerHTML = `<div class="muted" style="line-height:1.7">${esc(CONFIG.VILLA.name)}<br>${esc(CONFIG.VILLA.address)}<br>${esc(CONFIG.VILLA.checkin)}<br>${esc(CONFIG.VILLA.checkout)}<br>${esc(CONFIG.VILLA.wifi)}<br>${esc(CONFIG.VILLA.owner)}</div>`;
+  if (isAdmin()) { $("#adminCard").style.display = "block"; $("#annForm").style.display = "block"; }
+
+  onSnapshot(collection(db, "users"), snap => {
+    users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (me) { const f = users.find(u => u.id === me.id); if (f) me = { ...me, ...f }; }
+    renderMembers(); renderMap(); renderAdmin(); renderStats();
+  });
+
+  const msgQ = query(collection(db, "messages"), orderBy("createdAt", "asc"), limitToLast(300));
+  onSnapshot(msgQ, snap => { renderMessages(snap.docs.map(d => ({ id: d.id, ...d.data() }))); });
+
+  onSnapshot(collection(db, "polls"), snap => renderPolls(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+
+  onSnapshot(doc(db, "announcements", "pinned"), snap => {
+    const t = snap.exists() ? snap.data() : null;
+    $("#pinBox").innerHTML = t ? `<div class="pinned">📌 <b>${esc(t.by)}:</b> ${esc(t.text)}</div>` : "";
+    $("#annText").textContent = t ? t.text : "Abhi koi announcement nahi";
+  });
+
+  onSnapshot(collection(db, "sos"), snap => {
+    snap.docChanges().forEach(c => {
+      const d = c.doc.data();
+      if (c.type === "added" && d.clientAt > startedAt) {
+        alert(`🚨 SOS: ${d.name} ko help chahiye!`);
+        if (d.lat) window.open(`https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lng}#map=16/${d.lat}/${d.lng}`, "_blank");
+      }
+    });
+  });
+
+  initMap();
+  askLocation();
+}
+
+/* ============ NAVIGATION ============ */
+function showPane(name) {
+  document.querySelectorAll(".pane").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("on"));
+  const pane = $("#p-" + name);
+  pane.classList.add("active");
+  document.querySelector(`nav button[data-pane="${name}"]`).classList.add("on");
+  $("#p-chat").style.display = name === "chat" ? "flex" : "none";
+  if (name === "map" && map) setTimeout(() => map.invalidateSize(), 150);
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => showPane(b.dataset.pane));
+
+/* ============ CHAT ============ */
+function renderMessages(list) {
+  const box = $("#msgs");
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 80;
+  box.innerHTML = list.map(m => {
+    if (m.type === "arrival") return `<div class="sys">${esc(m.text)}</div>`;
+    const mine = me && m.phone === me.id;
+    let body;
+    if (m.type === "sticker") body = `<div class="sticker">${esc(m.text)}</div>`;
+    else if (m.type === "image") body = `<img src="${esc(m.url)}" loading="lazy">`;
+    else body = esc(m.text).replace(/@([\p{L}\d_]+)/gu, '<span class="tag">@$1</span>');
+    return `<div class="msg ${mine ? "mine" : ""}"><div class="avatar">${initials(m.name)}</div><div class="bubble"><div class="who">${esc(m.name)}</div>${body}</div></div>`;
+  }).join("");
+  if (list.length > lastMsgCount && atBottom) box.scrollTop = box.scrollHeight;
+  lastMsgCount = list.length;
+  $("#rMsgs").textContent = list.length;
+  window._msgs = list;
+}
+
+async function sendMsg(data) {
+  if (!me) return;
+  await addDoc(collection(db, "messages"), { ...data, name: me.name, phone: me.id, createdAt: serverTimestamp() });
+}
+
+$("#btnSend").onclick = () => {
+  const t = $("#inMsg").value.trim();
+  if (!t) return;
+  sendMsg({ type: "text", text: t });
+  $("#inMsg").value = "";
+};
+$("#inMsg").addEventListener("keydown", e => { if (e.key === "Enter") $("#btnSend").click(); });
+
+const EMOJIS = ["😀","😂","🥰","😎","🤩","😭","😡","👍","👏","🔥","🎉","❤️","🙏","😴","🍕","🍻","🏖️","🌴","🚗","📸"];
+const STICKERS = ["🥳","🤣","💃","🕺","😜","🫶","🍾","🎊","🏊","🛥️"];
+let pickerOpen = false;
+$("#btnEmoji").onclick = () => {
+  pickerOpen = !pickerOpen;
+  $("#pickerBox").innerHTML = pickerOpen ? `<div class="picker">${EMOJIS.map(e => `<span data-e="${e}">${e}</span>`).join("")}</div><div class="picker">${STICKERS.map(s => `<span class="st" data-s="${s}">${s}</span>`).join("")}</div>` : "";
+};
+$("#pickerBox").onclick = e => {
+  const el = e.target.closest("[data-e],[data-s]");
+  if (!el) return;
+  if (el.dataset.s) sendMsg({ type: "sticker", text: el.dataset.s });
+  else { const i = $("#inMsg"); i.value += el.dataset.e; i.focus(); }
+};
+
+/* ============ PHOTOS (Cloudinary) ============ */
+async function uploadImage(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", CONFIG.UPLOAD_PRESET);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${CONFIG.CLOUD_NAME}/image/upload`, { method: "POST", body: fd });
+  const j = await r.json();
+  if (!j.secure_url) throw new Error(j.error?.message || "Upload fail hua");
+  return j.secure_url;
+}
+async function handleFile(file) {
+  if (!file) return;
+  $("#upStatus").textContent = "Photo upload ho rahi hai…";
+  try {
+    const url = await uploadImage(file);
+    await sendMsg({ type: "image", url, text: "📷 Photo" });
+    $("#upStatus").textContent = "Photo bhej di ✅";
+  } catch (e) { $("#upStatus").textContent = "Error: " + e.message; }
+}
+$("#btnGallery").onclick = () => $("#fileGallery").click();
+$("#btnCamera").onclick = () => $("#fileCamera").click();
+$("#fileGallery").onchange = e => handleFile(e.target.files[0]);
+$("#fileCamera").onchange = e => handleFile(e.target.files[0]);
+
+function renderStats() {
+  $("#rMembers").textContent = approvedUsers().length;
+}
+onSnapshot(collection(db, "messages"), snap => {
+  const imgs = snap.docs.map(d => d.data()).filter(d => d.type === "image");
+  $("#rPhotos").textContent = imgs.length;
+  $("#album").innerHTML = imgs.reverse().map(d => `<a href="${esc(d.url)}" target="_blank"><img src="${esc(d.url)}" loading="lazy"></a>`).join("") || `<p class="muted">Abhi koi photo nahi</p>`;
+});
+
+/* ============ MEMBERS (click to call) ============ */
+function renderMembers() {
+  const list = approvedUsers();
+  $("#membersList").innerHTML = `<h3>Group members (${list.length})</h3>` + list.map(u => `
+    <div class="member">
+      <div class="row"><span class="dot ${u.sharing !== false && u.lat ? "on" : ""}"></span><div><b>${esc(u.name)}</b>${u.id === me?.id ? ' <span class="pill">tum</span>' : ""}</div></div>
+      ${u.id === me?.id ? "" : `<a href="tel:+91${esc(u.phone)}">📞 Call</a>`}
+    </div>`).join("");
+}
+
+/* ============ MAP (OpenStreetMap / Leaflet) ============ */
+function initMap() {
+  if (map) return;
+  map = L.map("map").setView([CONFIG.VILLA.lat, CONFIG.VILLA.lng], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+  L.marker([CONFIG.VILLA.lat, CONFIG.VILLA.lng]).addTo(map).bindPopup(`🏡 ${esc(CONFIG.VILLA.name)}`);
+}
+function renderMap() {
+  if (!map) return;
+  markersLayer.clearLayers();
+  approvedUsers().filter(u => u.lat && u.sharing !== false).forEach(u => {
+    const when = u.locAt ? fmt(tsMs(u.locAt)) : "";
+    L.marker([u.lat, u.lng]).addTo(markersLayer)
+      .bindPopup(`<b>${esc(u.name)}</b><br>${when ? "Last update: " + when : ""}<br><a href="https://www.google.com/maps/dir/?api=1&destination=${u.lat},${u.lng}" target="_blank">Google Maps me kholo</a>`);
+  });
+}
+$("#chkShare").onchange = e => { if (me) updateDoc(doc(db, "users", me.id), { sharing: e.target.checked }); toast(e.target.checked ? "Location share ho rahi hai" : "Location band hai"); };
+
+/* ============ MORE: villa, arrival, navigate ============ */
+$("#btnNavigate").onclick = () => window.open(`https://www.google.com/maps/dir/?api=1&destination=${CONFIG.VILLA.lat},${CONFIG.VILLA.lng}`, "_blank");
+$("#btnArrive").onclick = () => {
+  if (!me) return;
+  sendMsg({ type: "arrival", text: `🎉 ${me.name} villa pahunch gaya!` });
+  toast("Group ko bata diya 🎉");
+};
+
+/* ============ ANNOUNCEMENTS (admin) ============ */
+$("#btnAnn").onclick = async () => {
+  const t = $("#inAnn").value.trim();
+  if (!t || !isAdmin()) return;
+  await setDoc(doc(db, "announcements", "pinned"), { text: t, by: me.name, at: serverTimestamp() });
+  $("#inAnn").value = "";
+  toast("Pin ho gaya 📌");
+};
+
+/* ============ POLLS (anyone) ============ */
+$("#btnPoll").onclick = async () => {
+  const q = $("#inPollQ").value.trim();
+  const opts = $("#inPollOpts").value.split(",").map(s => s.trim()).filter(Boolean);
+  if (!q || opts.length < 2) return toast("Sawal aur kam se kam 2 options do");
+  await addDoc(collection(db, "polls"), { question: q, options: opts, votes: {}, by: me.name, createdAt: serverTimestamp() });
+  $("#inPollQ").value = ""; $("#inPollOpts").value = "";
+  toast("Poll ban gaya");
+};
+function renderPolls(list) {
+  $("#pollsList").innerHTML = list.length ? list.slice().reverse().map(p => {
+    const votes = p.votes || {};
+    const mine = me ? votes[me.id] : undefined;
+    const total = Object.keys(votes).length || 1;
+    return `<div class="card" style="margin:0"><b>${esc(p.question)}</b><div class="muted">by ${esc(p.by)}</div>` +
+      p.options.map((o, i) => {
+        const c = Object.values(votes).filter(v => v === i).length;
+        return `<button class="opt ${mine === i ? "picked" : ""}" data-poll="${p.id}" data-i="${i}">${esc(o)} <span class="muted" style="float:right">${c} (${Math.round(c / total * 100)}%)</span></button>`;
+      }).join("") + `</div>`;
+  }).join("") : `<p class="muted">Abhi koi poll nahi</p>`;
+}
+$("#pollsList").onclick = async e => {
+  const b = e.target.closest("[data-poll]");
+  if (!b || !me) return;
+  await updateDoc(doc(db, "polls", b.dataset.poll), { [`votes.${me.id}`]: Number(b.dataset.i) });
+};
+
+/* ============ SOS ============ */
+$("#btnSos").onclick = () => {
+  if (!confirm("SOS bhejna hai? Sabko tumhara naam aur location jayega.")) return;
+  const send = (lat, lng) => addDoc(collection(db, "sos"), { name: me.name, phone: me.id, lat: lat ?? null, lng: lng ?? null, clientAt: Date.now(), at: serverTimestamp() });
+  navigator.geolocation.getCurrentPosition(p => send(p.coords.latitude, p.coords.longitude), () => send(), { enableHighAccuracy: true, timeout: 8000 });
+  toast("SOS bhej diya 🚨", 4000);
+};
+
+/* ============ VIDEO CALL (Jitsi) ============ */
+$("#btnVideo").onclick = () => window.open(`https://meet.jit.si/${CONFIG.JITSI_ROOM}`, "_blank");
+
+/* ============ FUN ZONE ============ */
+$("#btnDare").onclick = () => {
+  const d = CONFIG.DARES[Math.floor(Math.random() * CONFIG.DARES.length)];
+  $("#funOut").textContent = "🎲 " + d;
+};
+$("#btnPickMember").onclick = () => {
+  const l = approvedUsers();
+  if (!l.length) return;
+  const p = l[Math.floor(Math.random() * l.length)];
+  $("#funOut").textContent = "🎯 " + p.name;
+};
+
+/* ============ ADMIN: approve join requests ============ */
+function renderAdmin() {
+  if (!isAdmin()) return;
+  const pend = users.filter(u => u.status === "pending");
+  $("#pendingList").innerHTML = pend.length ? pend.map(u => `
+    <div class="member">
+      <div><b>${esc(u.name)}</b><div class="muted">${esc(u.phone)}</div></div>
+      <button data-approve="${u.id}">Approve</button>
+    </div>`).join("") : `<p class="muted">Koi pending request nahi</p>`;
+}
+$("#pendingList").onclick = async e => {
+  const id = e.target.dataset.approve;
+  if (id) await updateDoc(doc(db, "users", id), { status: "approved" });
+};
+
+/* ============ AUTO LOGIN ============ */
+const saved = localStorage.getItem("jm_phone");
+if (saved) {
+  signInAnonymously(auth).then(() => watchMe(saved)).catch(() => showScreen("s-login"));
+} else {
+  showScreen("s-login");
+}
+
+/* ============ SERVICE WORKER (installable) ============ */
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
